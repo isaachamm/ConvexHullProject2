@@ -124,6 +124,8 @@ class ConvexHullSolver(QObject):
 				return point_array[0]
 			else:
 				# This is where the divide occurs – logn time
+				# At this point, everything will be sorted in clockwise order. To change to counter-clockwise,
+				# 	You'd have to reverse the right list.
 				left_points = convex_hull_solver(point_array[:(len(point_array) // 2)])	# left-side recurse
 				right_points = convex_hull_solver(point_array[(len(point_array) // 2):]) # right-side recurse
 
@@ -131,42 +133,150 @@ class ConvexHullSolver(QObject):
 				print(right_points)
 
 				def find_upper_tangent(left_side, right_side):
-					rm_left_point = None
-					lm_right_point = None
-					if type(left_points) is not list:
-						rm_left_point = left_points
+					left_side_point = None  # start with right-most point on the left hull
+					right_side_point = None # start with left-most point on the right hull
+					if type(left_side) is not list:
+						left_side_point = left_side
 					else:
-						rm_left_point = left_side[:-1]
+						# TODO: Need alternate way to find x-value
+						left_side_point = left_side[-1]
 
-					if type(right_points) is not list:
-						lm_right_point = right_points
+					if type(right_side) is not list:
+						right_side_point = right_side
 					else:
-						lm_right_point = right_side[0]
+						# TODO: Need alternate way to find x-value
+						right_side_point = right_side[0]
 
-					slope = (rm_left_point.y() - lm_right_point.y()) / (rm_left_point.x() - lm_right_point.x())
+					# Compare points on the previous hull to the line.
+					# Adjust line (the slope and b need to be inside the while loop)
+					change_occurred = True
+					while change_occurred:
+
+						change_occurred = False
+						# We need to calculate slope and b for y = mx + b
+						slope = (left_side_point.y() - right_side_point.y()) / (left_side_point.x() - right_side_point.x())
+						b = right_side_point.y() - (slope * right_side_point.x())
 
 
-					# for left_point in left_side:
-					# 	if ()
+						# Need this check for when either side is only one point
+						if type(left_side) is list:
+							for i in range(len(left_side)):
+								if left_side[i].y() > ((slope * left_side[i].x()) + b):
+									left_side_point = left_side[i]
+									change_occurred = True
 
-					return
+						# Save time not calculating for both until the left side is already done
+						if change_occurred: continue
 
-				find_upper_tangent(left_points, right_points)
+						# Need this check for when either side is only one point
+						if type(right_side) is list:
+							for i in range(len(right_side)):
+								temp_point = right_side[i]
+								if temp_point.y() > ((slope * temp_point.x()) + b):
+									right_side_point = right_side[i]
+									change_occurred = True
 
-				def find_lower_tangent():
-					return
+					return [left_side_point, right_side_point]
+
+				def find_lower_tangent(left_side, right_side):
+					left_side_point = None  # start with right-most point on the left hull
+					right_side_point = None # start with left-most point on the right hull
+					if type(left_side) is not list:
+						left_side_point = left_side
+					else:
+						# TODO: Need alternate way to find x-value
+						left_side_point = left_side[-1]
+
+					if type(right_side) is not list:
+						right_side_point = right_side
+					else:
+						# TODO: Need alternate way to find x-value
+						right_side_point = right_side[0]
+
+
+					change_occurred = True
+					while change_occurred:
+
+						change_occurred = False
+						# We need to calculate slope and b for y = mx + b
+						slope = (left_side_point.y() - right_side_point.y()) / (left_side_point.x() - right_side_point.x())
+						b = right_side_point.y() - (slope * right_side_point.x())
+
+						# Compare points on the previous hull to the line.
+						# Adjust line (the slope and b need to be inside the while loop)
+						# Need to do order differences
+						# Need this check for when either side is only one point
+						if type(left_side) is list:
+							for left_point in left_side:
+								if left_point.y() < ((slope * left_point.x()) + b):
+									left_side_point = left_point
+									change_occurred = True
+
+						# Save time not calculating for both until the left side is already done
+						if change_occurred: continue
+
+						# Need this check for when either side is only one point
+						if type(right_side) is list:
+							for right_point in right_side:
+								if right_point.y() < ((slope * right_point.x()) + b):
+									right_side_point = right_point
+									change_occurred = True
+
+					return [left_side_point, right_side_point]
+				# This will return a line that we will use to make the new hull
+				upper_tangent = find_upper_tangent(left_points, right_points)
+				lower_tangent = find_lower_tangent(left_points, right_points)
+
+				new_hull = None
+
+				# This is the upper tangent point on the left side –- where we'll start keeping track
+				add_points = False
+
+				# We have to multiply by 2 here to make sure that we get all the points from the UT to the LT
+				if left_points is not list:
+					new_hull = [left_points]
+				else:
+					for i in range(len(left_points) * 2):
+						index = i % len(left_points)
+
+						if left_points[index] == upper_tangent[0]:
+							new_hull = upper_tangent[0]
+							add_points = True
+
+						if add_points:
+							new_hull.append(left_points[index])
+
+						if left_points[index] == lower_tangent[0]:
+							# Don't add here because we already added just above
+							add_points = False
+							break
+
+				if right_points is not list:
+					new_hull.append(right_points)
+				else:
+					for i in range(len(right_points) * 2):
+						index = i % len(right_points)
+
+						if right_points[index] == lower_tangent[1]:
+							add_points = True
+
+						if add_points:
+							new_hull.append(right_points[index])
+
+						if right_points[index] == upper_tangent[1]:
+							add_points = False
+							break
+
+				return new_hull
+
+
 		# 	while either of the tangent functions change the tangent lines
 		# 		call upper tangent function
 		# 		call lower tangent function
 		# 	return combined hulls, or it won't recurse back up
 
-		convex_hull_solver(points)
-
-
 		# this is a dummy polygon of the first 3 unsorted points
-		polygon = [QLineF(points[i],points[(i+1)%3]) for i in range(3)]
-		# TODO: REPLACE THE LINE ABOVE WITH A CALL TO YOUR DIVIDE-AND-CONQUER CONVEX HULL SOLVER
-
+		polygon = convex_hull_solver(points)
 
 		t4 = time.time()
 
