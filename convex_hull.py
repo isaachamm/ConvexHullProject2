@@ -138,14 +138,18 @@ class ConvexHullSolver(QObject):
 					if type(left_side) is not list:
 						left_side_point = left_side
 					else:
-						# TODO: Need alternate way to find x-value
-						left_side_point = left_side[-1]
+						left_side_point = left_side[0]
+						for point in left_side:
+							if left_side_point.x() < point.x():
+								left_side_point = point	
 
 					if type(right_side) is not list:
 						right_side_point = right_side
 					else:
-						# TODO: Need alternate way to find x-value
 						right_side_point = right_side[0]
+						for point in right_side:
+							if right_side_point.x() > point.x():
+								right_side_point = point
 
 					# Compare points on the previous hull to the line.
 					# Adjust line (the slope and b need to be inside the while loop)
@@ -233,14 +237,14 @@ class ConvexHullSolver(QObject):
 				add_points = False
 
 				# We have to multiply by 2 here to make sure that we get all the points from the UT to the LT
-				if left_points is not list:
+				if type(left_points) is not list:
 					new_hull = [left_points]
 				else:
 					for i in range(len(left_points) * 2):
 						index = i % len(left_points)
 
 						if left_points[index] == upper_tangent[0]:
-							new_hull = upper_tangent[0]
+							# new_hull = [upper_tangent[0]]
 							add_points = True
 
 						if add_points:
@@ -249,9 +253,8 @@ class ConvexHullSolver(QObject):
 						if left_points[index] == lower_tangent[0]:
 							# Don't add here because we already added just above
 							add_points = False
-							break
 
-				if right_points is not list:
+				if type(right_points) is not list:
 					new_hull.append(right_points)
 				else:
 					for i in range(len(right_points) * 2):
@@ -265,7 +268,6 @@ class ConvexHullSolver(QObject):
 
 						if right_points[index] == upper_tangent[1]:
 							add_points = False
-							break
 
 				return new_hull
 
@@ -276,7 +278,10 @@ class ConvexHullSolver(QObject):
 		# 	return combined hulls, or it won't recurse back up
 
 		# this is a dummy polygon of the first 3 unsorted points
-		polygon = convex_hull_solver(points)
+		hull = convex_hull_solver(points)
+		hull_size = len(hull) - 1
+		polygon = [QLineF(hull[i], hull[(i + 1) % hull_size]) for i in range(len(hull))]
+		# polygon = [QLineF(points[i],points[(i+1)%3]) for i in range(3)]
 
 		t4 = time.time()
 
