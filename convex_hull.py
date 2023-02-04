@@ -41,7 +41,7 @@ class ConvexHullSolver(QObject):
 		lines = [line]
 		self.view.addLines(lines,color)
 		if self.pause:
-			time.sleep(PAUSE)
+			time.sleep(1)
 
 	def eraseTangent(self, line):
 		self.view.clearLines(line)
@@ -53,7 +53,7 @@ class ConvexHullSolver(QObject):
 	def showHull(self, polygon, color):
 		self.view.addLines(polygon,color)
 		if self.pause:
-			time.sleep(PAUSE)
+			time.sleep(1)
 
 	def eraseHull(self,polygon):
 		self.view.clearLines(polygon)
@@ -129,8 +129,8 @@ class ConvexHullSolver(QObject):
 				left_points = convex_hull_solver(point_array[:(len(point_array) // 2)])	# left-side recurse
 				right_points = convex_hull_solver(point_array[(len(point_array) // 2):]) # right-side recurse
 
-				print(left_points)
-				print(right_points)
+				# print(left_points)
+				# print(right_points)
 
 				def find_upper_tangent(left_side, right_side):
 					left_side_point = None  # start with right-most point on the left hull
@@ -156,6 +156,9 @@ class ConvexHullSolver(QObject):
 					change_occurred = True
 					while change_occurred:
 
+						# tangent_line = QLineF(left_side_point, right_side_point)
+						# self.showTangent(tangent_line, GREEN)
+
 						change_occurred = False
 						# We need to calculate slope and b for y = mx + b
 						slope = (left_side_point.y() - right_side_point.y()) / (left_side_point.x() - right_side_point.x())
@@ -165,9 +168,11 @@ class ConvexHullSolver(QObject):
 						# Need this check for when either side is only one point
 						if type(left_side) is list:
 							for i in range(len(left_side)):
-								if left_side[i].y() > ((slope * left_side[i].x()) + b):
+								if left_side[i].y() > ((slope * left_side[i].x()) + b) \
+								and not math.isclose(left_side[i].y(), ((slope * left_side[i].x()) + b)):
 									left_side_point = left_side[i]
 									change_occurred = True
+									break
 
 						# Save time not calculating for both until the left side is already done
 						if change_occurred: continue
@@ -175,10 +180,11 @@ class ConvexHullSolver(QObject):
 						# Need this check for when either side is only one point
 						if type(right_side) is list:
 							for i in range(len(right_side)):
-								temp_point = right_side[i]
-								if temp_point.y() > ((slope * temp_point.x()) + b):
+								if right_side[i].y() > ((slope * right_side[i].x()) + b)\
+								and not math.isclose(right_side[i].y(), ((slope * right_side[i].x()) + b)):
 									right_side_point = right_side[i]
 									change_occurred = True
+									break
 
 					return [left_side_point, right_side_point]
 
@@ -188,18 +194,25 @@ class ConvexHullSolver(QObject):
 					if type(left_side) is not list:
 						left_side_point = left_side
 					else:
-						# TODO: Need alternate way to find x-value
-						left_side_point = left_side[-1]
+						left_side_point = left_side[0]
+						for point in left_side:
+							if left_side_point.x() < point.x():
+								left_side_point = point
 
 					if type(right_side) is not list:
 						right_side_point = right_side
 					else:
-						# TODO: Need alternate way to find x-value
 						right_side_point = right_side[0]
+						for point in right_side:
+							if right_side_point.x() > point.x():
+								right_side_point = point
 
 
 					change_occurred = True
 					while change_occurred:
+
+						# tangent_line = QLineF(left_side_point, right_side_point)
+						# self.showTangent(tangent_line, GREEN)
 
 						change_occurred = False
 						# We need to calculate slope and b for y = mx + b
@@ -211,20 +224,24 @@ class ConvexHullSolver(QObject):
 						# Need to do order differences
 						# Need this check for when either side is only one point
 						if type(left_side) is list:
-							for left_point in left_side:
-								if left_point.y() < ((slope * left_point.x()) + b):
-									left_side_point = left_point
+							for i in range(len(left_side)):
+								if left_side[i].y() < ((slope * left_side[i].x()) + b) \
+								and not math.isclose(left_side[i].y(), ((slope * left_side[i].x()) + b)):
+									left_side_point = left_side[i]
 									change_occurred = True
+									break
 
 						# Save time not calculating for both until the left side is already done
 						if change_occurred: continue
 
 						# Need this check for when either side is only one point
 						if type(right_side) is list:
-							for right_point in right_side:
-								if right_point.y() < ((slope * right_point.x()) + b):
-									right_side_point = right_point
+							for i in range(len(right_side)):
+								if right_side[i].y() < ((slope * right_side[i].x()) + b)\
+								and not math.isclose(right_side[i].y(), ((slope * right_side[i].x()) + b)):
+									right_side_point = right_side[i]
 									change_occurred = True
+									break
 
 					return [left_side_point, right_side_point]
 				# This will return a line that we will use to make the new hull
@@ -240,35 +257,34 @@ class ConvexHullSolver(QObject):
 				if type(left_points) is not list:
 					new_hull = [left_points]
 				else:
-					for i in range(len(left_points) * 2):
-						index = i % len(left_points)
-
-						if left_points[index] == upper_tangent[0]:
-							# new_hull = [upper_tangent[0]]
-							add_points = True
-
-						if add_points:
-							new_hull.append(left_points[index])
-
-						if left_points[index] == lower_tangent[0]:
-							# Don't add here because we already added just above
-							add_points = False
+					new_hull = [upper_tangent[1]]
+					left_side_counter = left_points.index(upper_tangent[0])
+					new_hull.append(left_points[left_side_counter])
+					# while – you don't hit the "end point"
+					while True:
+						left_side_counter += 1
+						left_side_counter = left_side_counter % len(left_points)
+						new_hull.append(left_points[left_side_counter])
+						if left_points[left_side_counter] == lower_tangent[0]:
+							break
 
 				if type(right_points) is not list:
 					new_hull.append(right_points)
 				else:
-					for i in range(len(right_points) * 2):
-						index = i % len(right_points)
+					right_side_counter = right_points.index(lower_tangent[1])
+					new_hull.append(right_points[right_side_counter])
 
-						if right_points[index] == lower_tangent[1]:
-							add_points = True
+					while True:
+						right_side_counter += 1
+						right_side_counter = right_side_counter % len(right_points)
+						new_hull.append(right_points[right_side_counter])
+						if right_points[right_side_counter] == upper_tangent[1]:
+							break
 
-						if add_points:
-							new_hull.append(right_points[index])
-
-						if right_points[index] == upper_tangent[1]:
-							add_points = False
-
+				new_hull_size = len(new_hull)
+				recursion_polygon = [QLineF(new_hull[i], new_hull[(i + 1) % new_hull_size]) for i in range(len(new_hull))]
+				# self.showHull(recursion_polygon, BLUE)
+				# self.eraseHull(recursion_polygon)
 				return new_hull
 
 
