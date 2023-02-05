@@ -151,6 +151,7 @@ class ConvexHullSolver(QObject):
 							if right_side_point.x() > point.x():
 								right_side_point = point
 
+
 					# Compare points on the previous hull to the line.
 					# Adjust line (the slope and b need to be inside the while loop)
 					change_occurred = True
@@ -225,7 +226,6 @@ class ConvexHullSolver(QObject):
 						# 			break
 
 						if type(right_side) is list:
-							'''Negative indices to go clockwise'''
 							# for i in range(len(right_side)):
 							# 	new_slope = (right_side[i].y() - left_side_point.y()) / (right_side[i].x() - left_side_point.x())
 							# 	if new_slope < slope:
@@ -234,19 +234,28 @@ class ConvexHullSolver(QObject):
 							# 		change_occurred = True
 							# 		break
 
+							'''Negative indices to go clockwise'''
 							right_index = right_side.index(right_side_point)
-							right_index -= 1
-							right_index = right_index % len(right_side)
+
 
 							while True:
+								right_index -= 1
+								# right_index = right_index % len(right_side)
 								new_slope = (right_side[right_index].y() - left_side_point.y()) / (right_side[right_index].x() - left_side_point.x())
 								if new_slope < slope:
-								# and not math.isclose(left_side[i].y(), ((slope * left_side[i].x()) + b)):
+
+									# 		right_side_point == right_side[right_index]:
+									# 	right_index -= 1
+									# 	right_index = right_index % len(right_side)
+									# else:
 									right_side_point = right_side[right_index]
 									slope = new_slope
-									right_index -= 1
-									right_index = right_index % len(right_side)
 									change_occurred = True
+									break
+								elif math.isclose(new_slope, slope):
+									right_side_point = right_side[right_index]
+									slope = new_slope
+									change_occurred = False
 								else:
 									break
 
