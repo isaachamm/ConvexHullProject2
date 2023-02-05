@@ -41,7 +41,7 @@ class ConvexHullSolver(QObject):
 		lines = [line]
 		self.view.addLines(lines,color)
 		if self.pause:
-			time.sleep(1)
+			time.sleep(PAUSE)
 
 	def eraseTangent(self, line):
 		self.view.clearLines(line)
@@ -53,7 +53,7 @@ class ConvexHullSolver(QObject):
 	def showHull(self, polygon, color):
 		self.view.addLines(polygon,color)
 		if self.pause:
-			time.sleep(1)
+			time.sleep(PAUSE)
 
 	def eraseHull(self,polygon):
 		self.view.clearLines(polygon)
@@ -166,25 +166,101 @@ class ConvexHullSolver(QObject):
 
 
 						# Need this check for when either side is only one point
+						# if type(left_side) is list:
+						# 	for i in range(len(left_side)):
+						# 		if left_side[i].y() > ((slope * left_side[i].x()) + b) \
+						# 		and not math.isclose(left_side[i].y(), ((slope * left_side[i].x()) + b)):
+						# 			left_side_point = left_side[i]
+						# 			change_occurred = True
+						# 			break
+
 						if type(left_side) is list:
+							# left_index = left_side.index(left_side_point)
+
 							for i in range(len(left_side)):
-								if left_side[i].y() > ((slope * left_side[i].x()) + b) \
-								and not math.isclose(left_side[i].y(), ((slope * left_side[i].x()) + b)):
+								new_slope = (left_side[i].y() - right_side_point.y()) / (left_side[i].x() - right_side_point.x())
+								if new_slope > slope:
+								# and not math.isclose(left_side[i].y(), ((slope * left_side[i].x()) + b)):
 									left_side_point = left_side[i]
 									change_occurred = True
 									break
+
+							# left_index = left_side.index(left_side_point)
+							#
+							# while True:
+							#
+							# 	left_index += 1
+							# 	left_index = left_index % len(left_side)
+							#
+							# 	new_slope = (left_side[left_index].y() - right_side_point.y()) / (left_side[left_index].x() - right_side_point.x())
+							# 	if new_slope > slope:
+							# 	# and not math.isclose(left_side[i].y(), ((slope * left_side[i].x()) + b)):
+							# 		left_side_point = left_side[left_index]
+							# 		change_occurred = True
+							# 	else:
+							# 		break
+
+
+						# if type(left_side) is list:
+						# 	for i in range(len(left_side)):
+						# 		if left_side[i].y() > ((slope * left_side[i].x()) + b) \
+						# 				and not math.isclose(left_side[i].y(), ((slope * left_side[i].x()) + b)):
+						# 			left_side_point = left_side[i]
+						# 			# this is the big change – we just completely get rid of the points we don't need,
+						# 			# 	so that we don't iterate over them twice
+						# 			left_side = left_side[i:]
+						# 			change_occurred = True
+						# 			break
 
 						# Save time not calculating for both until the left side is already done
 						if change_occurred: continue
 
 						# Need this check for when either side is only one point
+						# if type(right_side) is list:
+						# 	for i in range(len(right_side)):
+						# 		if right_side[i].y() > ((slope * right_side[i].x()) + b)\
+						# 		and not math.isclose(right_side[i].y(), ((slope * right_side[i].x()) + b)):
+						# 			right_side_point = right_side[i]
+						# 			change_occurred = True
+						# 			break
+
 						if type(right_side) is list:
-							for i in range(len(right_side)):
-								if right_side[i].y() > ((slope * right_side[i].x()) + b)\
-								and not math.isclose(right_side[i].y(), ((slope * right_side[i].x()) + b)):
-									right_side_point = right_side[i]
+							'''Negative indices to go clockwise'''
+							# for i in range(len(right_side)):
+							# 	new_slope = (right_side[i].y() - left_side_point.y()) / (right_side[i].x() - left_side_point.x())
+							# 	if new_slope < slope:
+							# 	# and not math.isclose(left_side[i].y(), ((slope * left_side[i].x()) + b)):
+							# 		right_side_point = right_side[i]
+							# 		change_occurred = True
+							# 		break
+
+							right_index = right_side.index(right_side_point)
+							right_index -= 1
+							right_index = right_index % len(right_side)
+
+							while True:
+								new_slope = (right_side[right_index].y() - left_side_point.y()) / (right_side[right_index].x() - left_side_point.x())
+								if new_slope < slope:
+								# and not math.isclose(left_side[i].y(), ((slope * left_side[i].x()) + b)):
+									right_side_point = right_side[right_index]
+									slope = new_slope
+									right_index -= 1
+									right_index = right_index % len(right_side)
 									change_occurred = True
+								else:
 									break
+
+						''' This is my third attempt to improve overall speed '''
+						# if type(right_side) is list:
+						# 	for i in range(len(right_side)):
+						# 		if right_side[i].y() > ((slope * right_side[i].x()) + b) \
+						# 				and not math.isclose(right_side[i].y(), ((slope * right_side[i].x()) + b)):
+						# 			right_side_point = right_side[i]
+						# 			# this is the big change – we just completely get rid of the points we don't need,
+						# 			# 	so that we don't iterate over them twice
+						# 			right_side = right_side[i:]
+						# 			change_occurred = True
+						# 			break
 
 					return [left_side_point, right_side_point]
 
@@ -223,25 +299,74 @@ class ConvexHullSolver(QObject):
 						# Adjust line (the slope and b need to be inside the while loop)
 						# Need to do order differences
 						# Need this check for when either side is only one point
+
+						''' THIS WORKS – DON'T TOUCH IT '''
+						# if type(left_side) is list:
+						# 	for i in range(len(left_side)):
+						# 		if left_side[i].y() < ((slope * left_side[i].x()) + b) \
+						# 		and not math.isclose(left_side[i].y(), ((slope * left_side[i].x()) + b)):
+						# 			left_side_point = left_side[i]
+						# 			change_occurred = True
+						# 			break
+
+						''' THIS WORKS – DON'T TOUCH IT '''
 						if type(left_side) is list:
+							'''negative indices to go clockwise
+							Also start with the leftmost/rightmost point to go even faster'''
+
 							for i in range(len(left_side)):
-								if left_side[i].y() < ((slope * left_side[i].x()) + b) \
-								and not math.isclose(left_side[i].y(), ((slope * left_side[i].x()) + b)):
+								new_slope = (left_side[i].y() - right_side_point.y()) / (left_side[i].x() - right_side_point.x())
+								if new_slope < slope:
+								# and not math.isclose(left_side[i].y(), ((slope * left_side[i].x()) + b)):
 									left_side_point = left_side[i]
 									change_occurred = True
 									break
+
+						''' This is my third attempt to improve overall speed '''
+						# if type(left_side) is list:
+						# 	for i in range(len(left_side)):
+						# 		if left_side[i].y() < ((slope * left_side[i].x()) + b) \
+						# 				and not math.isclose(left_side[i].y(), ((slope * left_side[i].x()) + b)):
+						# 			left_side_point = left_side[i]
+						# 			# this is the big change – we just completely get rid of the points we don't need,
+						# 			# 	so that we don't iterate over them twice
+						# 			left_side = left_side[i:]
+						# 			change_occurred = True
+						# 			break
 
 						# Save time not calculating for both until the left side is already done
 						if change_occurred: continue
 
 						# Need this check for when either side is only one point
+						# if type(right_side) is list:
+						# 	for i in range(len(right_side)):
+						# 		if right_side[i].y() < ((slope * right_side[i].x()) + b)\
+						# 		and not math.isclose(right_side[i].y(), ((slope * right_side[i].x()) + b)):
+						# 			right_side_point = right_side[i]
+						# 			change_occurred = True
+						# 			break
+
 						if type(right_side) is list:
 							for i in range(len(right_side)):
-								if right_side[i].y() < ((slope * right_side[i].x()) + b)\
-								and not math.isclose(right_side[i].y(), ((slope * right_side[i].x()) + b)):
+								new_slope = (right_side[i].y() - left_side_point.y()) / (right_side[i].x() - left_side_point.x())
+								if new_slope > slope:
+								# and not math.isclose(left_side[i].y(), ((slope * left_side[i].x()) + b)):
 									right_side_point = right_side[i]
 									change_occurred = True
 									break
+
+						''' This is my third attempt to improve overall speed '''
+						# if type(right_side) is list:
+						# 	for i in range(len(right_side)):
+						# 		if right_side[i].y() < ((slope * right_side[i].x()) + b) \
+						# 				and not math.isclose(right_side[i].y(), ((slope * right_side[i].x()) + b)):
+						# 			right_side_point = right_side[i]
+						# 			# this is the big change – we just completely get rid of the points we don't need,
+						# 			# 	so that we don't iterate over them twice
+						# 			right_side = right_side[i:]
+						# 			change_occurred = True
+						# 			break
+
 
 					return [left_side_point, right_side_point]
 				# This will return a line that we will use to make the new hull
@@ -262,11 +387,16 @@ class ConvexHullSolver(QObject):
 					new_hull.append(left_points[left_side_counter])
 					# while – you don't hit the "end point"
 					while True:
+						if left_points[left_side_counter] == lower_tangent[0]:
+							break
 						left_side_counter += 1
 						left_side_counter = left_side_counter % len(left_points)
 						new_hull.append(left_points[left_side_counter])
-						if left_points[left_side_counter] == lower_tangent[0]:
-							break
+						# We break here because we connect to the other hull at this point
+						# if left_points[left_side_counter] == lower_tangent[0]:
+						# 	break
+					# left_side_counter = left_side_counter % len(left_points)
+					# new_hull.append(left_points[left_side_counter])
 
 				if type(right_points) is not list:
 					new_hull.append(right_points)
@@ -293,10 +423,10 @@ class ConvexHullSolver(QObject):
 		# 		call lower tangent function
 		# 	return combined hulls, or it won't recurse back up
 
-		# this is a dummy polygon of the first 3 unsorted points
 		hull = convex_hull_solver(points)
 		hull_size = len(hull) - 1
 		polygon = [QLineF(hull[i], hull[(i + 1) % hull_size]) for i in range(len(hull))]
+		# this is a dummy polygon of the first 3 unsorted points
 		# polygon = [QLineF(points[i],points[(i+1)%3]) for i in range(3)]
 
 		t4 = time.time()
