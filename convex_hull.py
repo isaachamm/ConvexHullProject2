@@ -484,6 +484,9 @@ class ConvexHullSolver(QObject):
 
 		t4 = time.time()
 
+		# print(t2 - t1)
+		# print(t4 - t3)
+
 		# when passing lines to the display, pass a list of QLineF objects.  Each QLineF
 		# object can be created with two QPointF objects corresponding to the endpoints
 		self.showHull(polygon,RED)
